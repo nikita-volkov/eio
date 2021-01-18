@@ -11,32 +11,30 @@ import Eio.Prelude hiding (catch, throw, throwIO)
 import qualified Eio.Prelude as Prelude
 
 
+runEio :: Eio Void res -> IO res
+runEio (Eio io) = io
+
 newtype Eio err res =
   Eio (IO res)
   deriving (Functor, Applicative, Monad, MonadFail)
 
-instance MonadIO (Eio err) where
-  liftIO =
-    Eio
+instance Exception err => MonadIO (Eio err) where
+  liftIO io =
+    Eio $ Prelude.catch io $ \ (e :: err) ->
+      Prelude.throwIO (unsafeCoerce e :: EioException)
 
 instance Bifunctor Eio where
   second = fmap
   first mapper =
     mapIO $ \ io ->
-      Prelude.catch io $ \ someException ->
-        let
-          err =
-            case fromException someException of
-              Just (EioException err) -> unsafeCoerce err
-              Nothing -> unsafeCoerce someException
-          in
-            Prelude.throwIO (unsafeCoerce (mapper err) :: EioException)
+      Prelude.catch io $ \ (EioException e) ->
+        Prelude.throwIO (unsafeCoerce (mapper e) :: EioException)
 
 newtype EioException =
   EioException (forall a. a)
 
 instance Show EioException where
-  show _ = "Error as exception"
+  show _ = "Internal Eio exception. You shouldn't be seeing this"
 
 instance Exception EioException
 
@@ -47,23 +45,17 @@ mapIO mapper =
 
 catch :: Eio a res -> (a -> Eio b res) -> Eio b res
 catch (Eio io) handler =
-  Eio $ Prelude.catch io $ \ someException ->
-    let
-      err = 
-        case fromException someException of
-          Just (EioException err) -> unsafeCoerce err
-          Nothing -> unsafeCoerce someException
-      in case handler err of Eio io -> io
+  Eio $ Prelude.catch io $ \ (EioException e) ->
+    case handler e of Eio io -> io
 
 throw :: err -> Eio err res
 throw e =
   Eio (Prelude.throwIO (unsafeCoerce e :: EioException))
 
-runEio :: Eio Void res -> IO res
-runEio (Eio io) = io
+liftExceptionlessIO :: IO res -> Eio err res
+liftExceptionlessIO = Eio
 
-liftTotalIO :: IO res -> Eio err res
-liftTotalIO = Eio
-
-handleIO :: (SomeException -> err) -> IO res -> Eio err res
-handleIO = error "TODO"
+liftIOMappingErr :: Exception exc => (exc -> err) -> IO res -> Eio err res
+liftIOMappingErr mapper io =
+  Eio $ Prelude.catch io $ \ exc ->
+    Prelude.throwIO (unsafeCoerce (mapper exc) :: EioException)
