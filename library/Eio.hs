@@ -21,22 +21,22 @@ newtype Eio err res =
 instance Exception err => MonadIO (Eio err) where
   liftIO io =
     Eio $ Prelude.catch io $ \ (e :: err) ->
-      Prelude.throwIO (unsafeCoerce e :: EioException)
+      Prelude.throwIO (unsafeCoerce e :: AnyException)
 
 instance Bifunctor Eio where
   second = fmap
   first mapper =
     mapIO $ \ io ->
-      Prelude.catch io $ \ (EioException e) ->
-        Prelude.throwIO (unsafeCoerce (mapper e) :: EioException)
+      Prelude.catch io $ \ (AnyException e) ->
+        Prelude.throwIO (unsafeCoerce (mapper e) :: AnyException)
 
-newtype EioException =
-  EioException (forall a. a)
+newtype AnyException =
+  AnyException (forall a. a)
 
-instance Show EioException where
-  show _ = "Internal Eio exception. You shouldn't be seeing this"
+instance Show AnyException where
+  show _ = "Internal EIO exception. You shouldn't be seeing this"
 
-instance Exception EioException
+instance Exception AnyException
 
 {-| Low-level helper. -}
 mapIO :: (IO a -> IO b) -> Eio oldErr a -> Eio newErr b
@@ -45,12 +45,12 @@ mapIO mapper =
 
 catch :: Eio a res -> (a -> Eio b res) -> Eio b res
 catch (Eio io) handler =
-  Eio $ Prelude.catch io $ \ (EioException e) ->
+  Eio $ Prelude.catch io $ \ (AnyException e) ->
     case handler e of Eio io -> io
 
 throw :: err -> Eio err res
 throw e =
-  Eio (Prelude.throwIO (unsafeCoerce e :: EioException))
+  Eio (Prelude.throwIO (unsafeCoerce e :: AnyException))
 
 liftExceptionlessIO :: IO res -> Eio err res
 liftExceptionlessIO = Eio
@@ -58,4 +58,4 @@ liftExceptionlessIO = Eio
 liftIOMappingErr :: Exception exc => (exc -> err) -> IO res -> Eio err res
 liftIOMappingErr mapper io =
   Eio $ Prelude.catch io $ \ exc ->
-    Prelude.throwIO (unsafeCoerce (mapper exc) :: EioException)
+    Prelude.throwIO (unsafeCoerce (mapper exc) :: AnyException)
