@@ -11,6 +11,10 @@ import Eio.Prelude hiding (catch, throw, throwIO)
 import qualified Eio.Prelude as Prelude
 
 
+{-|
+Execute an effect, with all errors handled.
+If any lifted IO actions throw unhandled exceptions, they will be propagated.
+-}
 runEio :: Eio Void res -> IO res
 runEio (Eio io) = io
 
