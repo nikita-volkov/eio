@@ -22,7 +22,7 @@ runEio (Eio io) = io
 IO action with explicitly typed error.
 -}
 newtype Eio err res =
-  Eio (IO res)
+  Eio { run :: IO res }
   deriving (Functor, Applicative, Monad, MonadFail)
 
 instance Exception err => MonadIO (Eio err) where
@@ -60,11 +60,11 @@ throw e =
 
 bracket :: Eio e a -> (a -> Eio e b) -> (a -> Eio e c) -> Eio e c
 bracket acquire release use =
-  do
-    resource <- acquire
-    join (catch
-      (fmap (\ res -> release resource $> res) (use resource))
-      (\ e -> return (release resource *> throw e)))
+  Eio $ Prelude.mask $ \ unmask -> do
+    resource <- run acquire
+    join (Prelude.catch
+      (fmap (\ result -> run (release resource) $> result) (unmask (run (use resource))))
+      (\ (e :: SomeException) -> return (run (release resource) *> Prelude.throwIO e)))
 
 {-|
 Lift an IO action without handling the exceptions that may be thrown in it.
