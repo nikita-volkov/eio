@@ -19,6 +19,19 @@ instance MonadIO (Eio err) where
   liftIO =
     Eio
 
+instance Bifunctor Eio where
+  second = fmap
+  first mapper =
+    mapIO $ \ io ->
+      Prelude.catch io $ \ someException ->
+        let
+          err =
+            case fromException someException of
+              Just (EioException err) -> unsafeCoerce err
+              Nothing -> unsafeCoerce someException
+          in
+            Prelude.throwIO (unsafeCoerce (mapper err) :: EioException)
+
 newtype EioException =
   EioException (forall a. a)
 
