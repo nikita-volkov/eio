@@ -51,6 +51,14 @@ throw :: err -> Eio err res
 throw e =
   Eio (Prelude.throwIO (unsafeCoerce e :: AnyException))
 
+bracket :: Eio e a -> (a -> Eio e b) -> (a -> Eio e c) -> Eio e c
+bracket acquire release use =
+  do
+    resource <- acquire
+    join (catch
+      (fmap (\ res -> release resource $> res) (use resource))
+      (\ e -> return (release resource *> throw e)))
+
 liftExceptionlessIO :: IO res -> Eio err res
 liftExceptionlessIO = Eio
 
