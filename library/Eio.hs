@@ -18,6 +18,9 @@ If any lifted IO actions throw unhandled exceptions, they will be propagated.
 runEio :: Eio Void res -> IO res
 runEio (Eio io) = io
 
+{-|
+IO action with explicitly typed error.
+-}
 newtype Eio err res =
   Eio (IO res)
   deriving (Functor, Applicative, Monad, MonadFail)
@@ -63,6 +66,9 @@ bracket acquire release use =
       (fmap (\ res -> release resource $> res) (use resource))
       (\ e -> return (release resource *> throw e)))
 
+{-|
+Lift an IO action without handling the exceptions that may be thrown in it.
+-}
 liftExceptionlessIO :: IO res -> Eio err res
 liftExceptionlessIO = Eio
 
