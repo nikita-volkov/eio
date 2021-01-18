@@ -24,6 +24,4 @@ library
   other-modules:
     Eio.Prelude
   build-depends:
-    base >=4.11 && <5,
-    bytestring >=0.10 && <0.12,
-    text >=1 && <2
+    base >=4.11 && <5

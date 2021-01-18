@@ -1,7 +1,6 @@
 module Eio.Prelude
 ( 
   module Exports,
-  showAsText,
   mapCoercible,
 )
 where
@@ -77,17 +76,6 @@ import Text.ParserCombinators.ReadPrec as Exports (ReadPrec, readPrec_to_P, read
 import Text.Printf as Exports (printf, hPrintf)
 import Text.Read as Exports (Read(..), readMaybe, readEither)
 import Unsafe.Coerce as Exports
-
--- text
--------------------------
-import Data.Text as Exports (Text)
-
--- bytestring
--------------------------
-import Data.ByteString as Exports (ByteString)
-
-showAsText :: Show a => a -> Text
-showAsText = show >>> fromString
 
 mapCoercible :: Coercible f g => (g a -> g b) -> f a -> f b
 mapCoercible mapper fOfA =
