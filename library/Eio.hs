@@ -19,9 +19,8 @@ newtype Eio err res =
   deriving (Functor, Applicative, Monad, MonadFail)
 
 instance Exception err => MonadIO (Eio err) where
-  liftIO io =
-    Eio $ Prelude.catch io $ \ (e :: err) ->
-      Prelude.throwIO (unsafeCoerce e :: AnyException)
+  liftIO =
+    handleIO throw
 
 instance Bifunctor Eio where
   second = fmap
@@ -59,3 +58,8 @@ liftIOMappingErr :: Exception exc => (exc -> err) -> IO res -> Eio err res
 liftIOMappingErr mapper io =
   Eio $ Prelude.catch io $ \ exc ->
     Prelude.throwIO (unsafeCoerce (mapper exc) :: AnyException)
+
+handleIO :: Exception exc => (exc -> Eio err res) -> IO res -> Eio err res
+handleIO handler io =
+  Eio $ Prelude.catch io $ \ exc ->
+    case handler exc of Eio io -> io
