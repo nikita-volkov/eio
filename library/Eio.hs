@@ -33,16 +33,16 @@ instance Bifunctor Eio where
   second = fmap
   first mapper =
     mapIO $ \ io ->
-      Prelude.catch io $ \ (AnyException e) ->
-        Prelude.throwIO (unsafeCoerce (mapper e) :: AnyException)
+      Prelude.catch io $ \ (EmbeddedException e) ->
+        Prelude.throwIO (unsafeCoerce (mapper e) :: EmbeddedException)
 
-newtype AnyException =
-  AnyException (forall a. a)
+newtype EmbeddedException =
+  EmbeddedException (forall a. a)
 
-instance Show AnyException where
+instance Show EmbeddedException where
   show _ = "Internal EIO exception. You shouldn't be seeing this"
 
-instance Exception AnyException
+instance Exception EmbeddedException
 
 {-| Low-level helper. -}
 mapIO :: (IO a -> IO b) -> Eio oldErr a -> Eio newErr b
@@ -51,12 +51,12 @@ mapIO mapper =
 
 handle :: (a -> Eio b res) -> Eio a res -> Eio b res
 handle handler (Eio io) =
-  Eio $ Prelude.catch io $ \ (AnyException e) ->
+  Eio $ Prelude.catch io $ \ (EmbeddedException e) ->
     case handler e of Eio io -> io
 
 throw :: err -> Eio err res
 throw e =
-  Eio (Prelude.throwIO (unsafeCoerce e :: AnyException))
+  Eio (Prelude.throwIO (unsafeCoerce e :: EmbeddedException))
 
 bracket :: Eio e a -> (a -> Eio e b) -> (a -> Eio e c) -> Eio e c
 bracket acquire release use =
@@ -75,7 +75,7 @@ liftExceptionlessIO = Eio
 liftIOMappingErr :: Exception exc => (exc -> err) -> IO res -> Eio err res
 liftIOMappingErr mapper io =
   Eio $ Prelude.catch io $ \ exc ->
-    Prelude.throwIO (unsafeCoerce (mapper exc) :: AnyException)
+    Prelude.throwIO (unsafeCoerce (mapper exc) :: EmbeddedException)
 
 handleIO :: Exception exc => (exc -> Eio err res) -> IO res -> Eio err res
 handleIO handler io =
