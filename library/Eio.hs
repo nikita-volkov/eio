@@ -2,12 +2,12 @@ module Eio
 (
   Eio,
   runEio,
-  catch,
+  handle,
   throw,
 )
 where
 
-import Eio.Prelude hiding (catch, throw, throwIO)
+import Eio.Prelude hiding (handle, throw, throwIO)
 import qualified Eio.Prelude as Prelude
 
 
@@ -49,8 +49,8 @@ mapIO :: (IO a -> IO b) -> Eio oldErr a -> Eio newErr b
 mapIO mapper =
   coerce . mapper . coerce
 
-catch :: Eio a res -> (a -> Eio b res) -> Eio b res
-catch (Eio io) handler =
+handle :: (a -> Eio b res) -> Eio a res -> Eio b res
+handle handler (Eio io) =
   Eio $ Prelude.catch io $ \ (AnyException e) ->
     case handler e of Eio io -> io
 
