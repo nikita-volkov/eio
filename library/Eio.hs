@@ -31,10 +31,7 @@ instance Exception err => MonadIO (Eio err) where
 
 instance Bifunctor Eio where
   second = fmap
-  first mapper =
-    mapIO $ \ io ->
-      Prelude.catch io $ \ (EmbeddedException e) ->
-        Prelude.throwIO (unsafeCoerce (mapper e) :: EmbeddedException)
+  first mapper = handle (throw . mapper)
 
 newtype EmbeddedException =
   EmbeddedException (forall a. a)
