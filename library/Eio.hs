@@ -15,8 +15,7 @@ import qualified Eio.Prelude as Prelude
 -- * Exception
 -------------------------
 
-newtype CapturedException =
-  CapturedException (forall a. a)
+data CapturedException
 
 instance Show CapturedException where
   show _ = "Internal EIO exception. You shouldn't be seeing this"
@@ -60,8 +59,8 @@ mapIO mapper =
 
 handle :: (a -> Eio b res) -> Eio a res -> Eio b res
 handle handler (Eio io) =
-  Eio $ Prelude.catch io $ \ (CapturedException e) ->
-    case handler e of Eio io -> io
+  Eio $ Prelude.catch io $ \ (e :: CapturedException) ->
+    case handler (unsafeCoerce e) of Eio io -> io
 
 throw :: err -> Eio err res
 throw e =
