@@ -1,4 +1,4 @@
-module Eio.Prelude
+module EIO.Prelude
 ( 
   module Exports,
   mapCoercible,
