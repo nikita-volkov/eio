@@ -70,9 +70,8 @@ liftExceptionlessIO :: IO res -> Eio err res
 liftExceptionlessIO = Eio
 
 liftIOMappingErr :: Exception exc => (exc -> err) -> IO res -> Eio err res
-liftIOMappingErr mapper io =
-  Eio $ Prelude.catch io $ \ exc ->
-    Prelude.throwIO (unsafeCoerce (mapper exc) :: EmbeddedException)
+liftIOMappingErr mapper =
+  handleIO (throw . mapper)
 
 handleIO :: Exception exc => (exc -> Eio err res) -> IO res -> Eio err res
 handleIO handler io =
