@@ -11,12 +11,31 @@ import Eio.Prelude hiding (handle, throw, throwIO)
 import qualified Eio.Prelude as Prelude
 
 
+-- * Exception
+-------------------------
+
+newtype EmbeddedException =
+  EmbeddedException (forall a. a)
+
+instance Show EmbeddedException where
+  show _ = "Internal EIO exception. You shouldn't be seeing this"
+
+instance Exception EmbeddedException
+
+
+-- * IO
+-------------------------
+
 {-|
 Execute an effect, with all errors handled.
 If any lifted IO actions throw unhandled exceptions, they will be propagated.
 -}
 runEio :: Eio Void res -> IO res
 runEio (Eio io) = io
+
+
+-- * EIO
+-------------------------
 
 {-|
 IO action with explicitly typed error.
@@ -32,14 +51,6 @@ instance Exception err => MonadIO (Eio err) where
 instance Bifunctor Eio where
   second = fmap
   first mapper = handle (throw . mapper)
-
-newtype EmbeddedException =
-  EmbeddedException (forall a. a)
-
-instance Show EmbeddedException where
-  show _ = "Internal EIO exception. You shouldn't be seeing this"
-
-instance Exception EmbeddedException
 
 {-| Low-level helper. -}
 mapIO :: (IO a -> IO b) -> Eio oldErr a -> Eio newErr b
