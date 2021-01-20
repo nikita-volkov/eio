@@ -88,3 +88,10 @@ handleIO :: Exception exc => (exc -> Eio err res) -> IO res -> Eio err res
 handleIO handler io =
   Eio $ Prelude.catch io $ \ exc ->
     case handler exc of Eio io -> io
+
+liftIONarrowing :: (SomeException -> Maybe err) -> IO res -> Eio err res
+liftIONarrowing narrower =
+  handleIO $ \ someException ->
+    case narrower someException of
+      Just err -> throw err
+      Nothing -> Eio (Prelude.throwIO someException)
