@@ -4,6 +4,7 @@ module Eio
   runEio,
   handle,
   throw,
+  liftExceptionlessIO,
 )
 where
 
