@@ -14,13 +14,13 @@ import qualified Eio.Prelude as Prelude
 -- * Exception
 -------------------------
 
-newtype EmbeddedException =
-  EmbeddedException (forall a. a)
+newtype CapturedException =
+  CapturedException (forall a. a)
 
-instance Show EmbeddedException where
+instance Show CapturedException where
   show _ = "Internal EIO exception. You shouldn't be seeing this"
 
-instance Exception EmbeddedException
+instance Exception CapturedException
 
 
 -- * IO
@@ -59,12 +59,12 @@ mapIO mapper =
 
 handle :: (a -> Eio b res) -> Eio a res -> Eio b res
 handle handler (Eio io) =
-  Eio $ Prelude.catch io $ \ (EmbeddedException e) ->
+  Eio $ Prelude.catch io $ \ (CapturedException e) ->
     case handler e of Eio io -> io
 
 throw :: err -> Eio err res
 throw e =
-  Eio (Prelude.throwIO (unsafeCoerce e :: EmbeddedException))
+  Eio (Prelude.throwIO (unsafeCoerce e :: CapturedException))
 
 bracket :: Eio e a -> (a -> Eio e b) -> (a -> Eio e c) -> Eio e c
 bracket acquire release use =
