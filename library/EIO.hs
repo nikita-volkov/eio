@@ -1,7 +1,7 @@
 module EIO
 (
-  EIO,
   runEIO,
+  EIO,
   handleIO,
   handle,
   throw,
@@ -27,7 +27,7 @@ instance Exception CapturedException
 -------------------------
 
 {-|
-Execute an effect, with all errors handled.
+Execute an effect, with all explicit errors handled.
 If any lifted IO actions throw unhandled exceptions, they will be propagated.
 -}
 runEIO :: EIO Void res -> IO res
