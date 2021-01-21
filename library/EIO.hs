@@ -2,9 +2,9 @@ module EIO
 (
   EIO,
   runEIO,
+  handleIO,
   handle,
   throw,
-  liftExceptionlessIO,
 )
 where
 
@@ -44,9 +44,12 @@ newtype EIO err res =
   EIO { run :: IO res }
   deriving (Functor, Applicative, Monad, MonadFail)
 
-instance Exception err => MonadIO (EIO err) where
-  liftIO =
-    handleIO throw
+{-|
+Lifts an IO action without handling the exceptions that may be thrown in it.
+For capturing exceptions from actions use 'handleIO'.
+-}
+instance MonadIO (EIO err) where
+  liftIO = EIO
 
 instance Bifunctor EIO where
   second = fmap
@@ -73,12 +76,6 @@ bracket acquire release use =
     join (Prelude.catch
       (fmap (\ result -> run (release resource) $> result) (unmask (run (use resource))))
       (\ (e :: SomeException) -> return (run (release resource) *> Prelude.throwIO e)))
-
-{-|
-Lift an IO action without handling the exceptions that may be thrown in it.
--}
-liftExceptionlessIO :: IO res -> EIO err res
-liftExceptionlessIO = EIO
 
 liftIOMappingErr :: Exception exc => (exc -> err) -> IO res -> EIO err res
 liftIOMappingErr mapper =
