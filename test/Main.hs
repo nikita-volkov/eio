@@ -16,7 +16,9 @@ main =
     testCase "Exception raised in IO gets caught" $ do
       ref <- newIORef @(Maybe IOException) Nothing
       runEIO $ do
-        handleIO (\e -> liftIO (writeIORef ref (Just e))) (fail "ABC")
+        handle
+          (\e -> liftIO (writeIORef ref (Just e)))
+          (capture fromException (fail "ABC"))
       assertEqual "" (Just "user error (ABC)") =<< fmap (fmap show) (readIORef ref)
     ,
     testCase "Custom error gets caught" $ do

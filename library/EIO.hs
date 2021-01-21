@@ -2,7 +2,7 @@ module EIO
 (
   runEIO,
   EIO,
-  handleIO,
+  capture,
   handle,
   throw,
   bracket,
@@ -47,7 +47,8 @@ newtype EIO err res =
 
 {-|
 Lifts an IO action without handling the exceptions that may be thrown in it.
-For capturing exceptions from actions use 'handleIO'.
+
+For capturing exceptions raised in it combine 'liftIO' with 'capture'.
 -}
 instance MonadIO (EIO err) where
   liftIO = EIO
@@ -60,6 +61,22 @@ instance Bifunctor EIO where
 mapIO :: (IO a -> IO b) -> EIO oldErr a -> EIO newErr b
 mapIO mapper =
   coerce . mapper . coerce
+
+{-|
+Narrow down any exception that may be raised in the lifted IO
+into an explicit error representation if you want it captured.
+
+Producing @Nothing@ in the passed in matching function means that
+the exception will be propagated up to 'runEIO' if not captured later.
+
+Use the 'fromException' function to match against specific exception types.
+-}
+capture :: (SomeException -> Maybe err) -> EIO err res -> EIO err res
+capture narrower =
+  mapIO $ Prelude.handle $ \ someException ->
+    case narrower someException of
+      Just err -> Prelude.throwIO (unsafeCoerce err :: CapturedException)
+      Nothing -> Prelude.throwIO someException
 
 handle :: (a -> EIO b res) -> EIO a res -> EIO b res
 handle handler (EIO io) =
@@ -77,19 +94,3 @@ bracket acquire release use =
     join (Prelude.catch
       (fmap (\ result -> run (release resource) $> result) (unmask (run (use resource))))
       (\ (e :: SomeException) -> return (run (release resource) *> Prelude.throwIO e)))
-
-liftIOMappingErr :: Exception exc => (exc -> err) -> IO res -> EIO err res
-liftIOMappingErr mapper =
-  handleIO (throw . mapper)
-
-handleIO :: Exception exc => (exc -> EIO err res) -> IO res -> EIO err res
-handleIO handler io =
-  EIO $ Prelude.catch io $ \ exc ->
-    case handler exc of EIO io -> io
-
-liftIONarrowing :: (SomeException -> Maybe err) -> IO res -> EIO err res
-liftIONarrowing narrower =
-  handleIO $ \ someException ->
-    case narrower someException of
-      Just err -> throw err
-      Nothing -> EIO (Prelude.throwIO someException)
