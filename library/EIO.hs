@@ -6,10 +6,11 @@ module EIO
   handle,
   throw,
   bracket,
+  try,
 )
 where
 
-import EIO.Prelude hiding (handle, throw, throwIO, bracket)
+import EIO.Prelude hiding (handle, throw, throwIO, bracket, try)
 import qualified EIO.Prelude as Prelude
 
 
@@ -94,3 +95,7 @@ bracket acquire release use =
     join (Prelude.catch
       (fmap (\ result -> run (release resource) $> result) (unmask (run (use resource))))
       (\ (e :: SomeException) -> return (run (release resource) *> Prelude.throwIO e)))
+
+try :: EIO a res -> EIO b (Either a res)
+try =
+  handle (return . Left) . fmap Right
