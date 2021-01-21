@@ -5,10 +5,11 @@ module EIO
   handleIO,
   handle,
   throw,
+  bracket,
 )
 where
 
-import EIO.Prelude hiding (handle, throw, throwIO)
+import EIO.Prelude hiding (handle, throw, throwIO, bracket)
 import qualified EIO.Prelude as Prelude
 
 
