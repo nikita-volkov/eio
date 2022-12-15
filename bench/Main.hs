@@ -1,7 +1,7 @@
 module Main where
 
 import Prelude
-import Gauge.Main
+import Criterion.Main
 import qualified EIO
 
 
