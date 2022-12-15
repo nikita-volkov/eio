@@ -26,6 +26,13 @@ main =
               liftIO (writeIORef ref 1)
               )
         ,
+        bench "IO" $ nfIO $ do
+          try @CustomException (do
+            liftIO (writeIORef ref 0)
+            throwIO CustomException
+            liftIO (writeIORef ref 1)
+            )
+        ],
         bench "ExceptT" $ nfIO $ runExceptT $ do
           catchError
             (do
@@ -35,22 +42,9 @@ main =
               return (Right ())
               )
             (return . Left)
-        ,
-        bench "IO" $ nfIO $ do
-          try @CustomException (do
-            liftIO (writeIORef ref 0)
-            throwIO CustomException
-            liftIO (writeIORef ref 1)
-            )
-        ]
       ,
       bgroup "Success" [
         bench "EIO" $ nfIO $ EIO.runEIO $ do
-          liftIO (writeIORef ref 0)
-          a <- liftIO (readIORef ref)
-          liftIO (writeIORef ref $! succ a)
-        ,
-        bench "ExceptT" $ nfIO $ runExceptT @() $ do
           liftIO (writeIORef ref 0)
           a <- liftIO (readIORef ref)
           liftIO (writeIORef ref $! succ a)
@@ -60,4 +54,9 @@ main =
           a <- readIORef ref
           writeIORef ref $! succ a
         ]
+        ,
+        bench "ExceptT" $ nfIO $ runExceptT @() $ do
+          liftIO (writeIORef ref 0)
+          a <- liftIO (readIORef ref)
+          liftIO (writeIORef ref $! succ a)
       ]
