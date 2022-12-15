@@ -1,6 +1,7 @@
 module Main where
 
-import Prelude hiding (catch, throw, bracket, handle)
+import Prelude hiding (catch, throw, bracket, handle, try)
+import qualified Prelude
 import EIO
 import Test.QuickCheck.Instances
 import Test.Tasty
@@ -49,4 +50,8 @@ main =
       case res of
         Left exc -> assertEqual "" "user error (ABC)" (show exc)
         Right _ -> assertFailure "Didn't fail"
+    ,
+    testCase "Non-exception gets processed" $ do
+      res <- runEIO $ try @Text @() $ throw "abc"
+      assertEqual "" (Left "abc") res
     ]
